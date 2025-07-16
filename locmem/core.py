@@ -1,5 +1,5 @@
 import ctypes
-from typing import Any, Optional, Tuple, Type, Callable
+from typing import Any, Callable, Optional, Tuple, Type
 
 _func = {}
 

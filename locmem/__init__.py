@@ -1,4 +1,4 @@
-from locmem.os_mem import get_memory, release_memory, PlatformMemoryManager, os_manager
 from locmem.allocator import *
-from locmem.core import Pointer, memread, memwrite, memexec, memset, memcpy
+from locmem.core import Pointer, memcpy, memexec, memread, memset, memwrite
 from locmem.datatype import *
+from locmem.os_mem import PlatformMemoryManager, get_memory, os_manager, release_memory

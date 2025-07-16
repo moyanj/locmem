@@ -1,8 +1,10 @@
 from __future__ import annotations
-from typing import Any, Optional, TypeVar, Generic, Union
-from locmem.core import Pointer, memread, memwrite
-from locmem.allocator import alloc, free
+
 import struct
+from typing import Any, Generic, Optional, TypeVar, Union
+
+from locmem.allocator import alloc, free
+from locmem.core import Pointer, memread, memwrite
 
 DataType = TypeVar("DataType")
 NumberType = TypeVar("NumberType", int, float, str, bool, bytes)

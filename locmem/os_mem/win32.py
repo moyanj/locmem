@@ -1,6 +1,6 @@
-# locmem/os_mem/win32.py
 import ctypes
 import sys
+
 from .base import BaseMemory
 
 if sys.platform != "win32":
@@ -40,7 +40,6 @@ class Win32Memory(BaseMemory):
         return address
 
     def release(self, address: int, size: int):
-
         MEM_RELEASE = 0x8000
         if self.kernel32.VirtualFree(address, 0, MEM_RELEASE) == 0:
             raise MemoryError(f"VirtualFree failed to free memory at {hex(address)}")

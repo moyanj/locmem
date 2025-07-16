@@ -1,7 +1,45 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "locmem"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
-requires-python = ">=3.12"
+authors = [
+    { name = "MoYan", email = "moyan@moyanjdc.top" },
+]
+description = "A Python library for direct, low-level memory management."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.8"
+license = { text = "MIT License" }
+keywords = ["memory", "low-level", "pointer", "ctypes", "mmap", "virtualalloc", "memory management"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
 dependencies = []
+
+[project.urls]
+"Homepage" = "https://github.com/moyanj/locmem"
+"Repository" = "https://github.com/moyanj/locmem"
+"Bug Tracker" = "https://github.com/moyanj/locmem/issues"
+[project.optional-dependencies]
+dev = [
+    "black",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py38']

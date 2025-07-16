@@ -1,6 +1,7 @@
-from .base import BaseMemory
 import ctypes
 import sys
+
+from .base import BaseMemory
 
 if "linux" not in sys.platform and "darwin" not in sys.platform:
     raise ImportError("This module only supports POSIX-compliant.")

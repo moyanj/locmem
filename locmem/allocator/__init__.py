@@ -1,8 +1,8 @@
 from locmem.core import Pointer
-from .base import BaseAllocator
-from .heap import HeapAllocator
-from .binned import BinnedAllocator
 
+from .base import BaseAllocator
+from .binned import BinnedAllocator
+from .heap import HeapAllocator
 
 global_allocator = BinnedAllocator()
 

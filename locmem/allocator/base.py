@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from typing import Dict
+
 from locmem.core import Pointer
 
 
@@ -9,7 +11,7 @@ class BaseAllocator(ABC):
     """
 
     def __init__(self):
-        self._allocated_blocks: dict[Pointer, int] = {}
+        self._allocated_blocks: Dict[Pointer, int] = {}
 
     @abstractmethod
     def alloc(self, size: int, executable: bool = False) -> Pointer:
