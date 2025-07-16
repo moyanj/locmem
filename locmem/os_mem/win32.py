@@ -40,7 +40,7 @@ class Win32Memory(BaseMemory):
         return address
 
     def release(self, address: int, size: int):
-        # 对于VirtualFree, size参数在MEM_RELEASE时必须为0
+
         MEM_RELEASE = 0x8000
         if self.kernel32.VirtualFree(address, 0, MEM_RELEASE) == 0:
             raise MemoryError(f"VirtualFree failed to free memory at {hex(address)}")

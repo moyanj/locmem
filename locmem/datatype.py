@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Any, Optional, TypeVar, Generic, Union, Self
+from typing import Any, Optional, TypeVar, Generic, Union
 from locmem.core import Pointer, memread, memwrite
 from locmem.allocator import alloc, free
 import struct
@@ -36,7 +36,6 @@ class ComparableMixin:
     value: Any
 
     def _resolve(self, other: Any) -> Any:
-        """解析操作数的值，如果是 BaseType 的子类则取其 .value"""
         if isinstance(other, BaseType):
             return other.value
         return other
@@ -67,7 +66,6 @@ class ComparableMixin:
         return str(self.value)
 
     def __bool__(self) -> bool:
-        """在布尔上下文中，任何非零/非空值都为 True。"""
         return bool(self.value)
 
 
@@ -78,12 +76,6 @@ class ArithmeticMixin(ComparableMixin):
     """
 
     def _resolve(self, other: Any) -> Numeric:
-        """
-        重写解析方法以支持更复杂的算术运算。
-        - 将 locmem 的 Char/Bool 类型转换为数值。
-        - 从其他 locmem 数字类型中提取 .value。
-        - 直接使用原生数字类型。
-        """
         if isinstance(other, Char):
             return ord(other.value)  # b'A' -> 65
         if isinstance(other, BaseType):
@@ -198,7 +190,7 @@ class BaseType(Generic[DataType]):
         self.free()
 
     @classmethod
-    def from_ptr(cls, ptr: Pointer) -> Self:  # 返回类型使用 Self
+    def from_ptr(cls, ptr: Pointer):  # 返回类型使用 Self
         """从内存指针创建对象。"""
         if cls.size <= 0:
             raise NotImplementedError(
@@ -209,7 +201,7 @@ class BaseType(Generic[DataType]):
         return cls.from_bytes(byte_data)
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> Self:  # 返回类型使用 Self
+    def from_bytes(cls, data: bytes):  # 返回类型使用 Self
         """从字节序列创建对象。"""
         raise NotImplementedError(
             f"Method 'from_bytes' not implemented for {cls.__name__}."
@@ -230,7 +222,7 @@ class StructBaseType(BaseType[DataType], ArithmeticMixin):
     使用 `struct` 模块进行序列化/反序列化的泛型基类。
     """
 
-    _fmt: str = ""  # 类属性，用于 struct 格式字符串
+    _fmt: str = ""
 
     def __init__(self, initial_value: DataType):
         if not hasattr(self.__class__, "size") or self.__class__.size <= 0:
@@ -256,7 +248,7 @@ class StructBaseType(BaseType[DataType], ArithmeticMixin):
         memwrite(self.ptr, struct.pack(self._fmt, value))
 
     @classmethod
-    def from_bytes(cls, data: bytes) -> Self:  # 为 StructBaseType 实现 from_bytes
+    def from_bytes(cls, data: bytes):  # 为 StructBaseType 实现 from_bytes
         """从字节序列创建对象。"""
         if not hasattr(cls, "size") or cls.size <= 0:
             raise ValueError(

@@ -9,8 +9,6 @@ class BaseAllocator(ABC):
     """
 
     def __init__(self):
-        # _allocated_blocks 用于跟踪此分配器管理的所有内存块。
-        # 键是 Pointer 对象，值是该内存块的大小。
         self._allocated_blocks: dict[Pointer, int] = {}
 
     @abstractmethod

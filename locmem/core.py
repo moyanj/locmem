@@ -11,7 +11,7 @@ class Pointer:
         if not isinstance(value, int):
             raise TypeError("Pointer value must be an integer.")
         self.value = value
-        self._deref = None  # 解引用函数由内存分配器设置
+        self._free_func = None  # 解引用函数由内存分配器设置
         self.freed = False
 
     def __repr__(self):
@@ -80,8 +80,8 @@ class Pointer:
 
     def free(self):
         """Dereference the pointer using the function set by the memory allocator."""
-        if self._deref is not None:
-            self._deref(self)
+        if self._free_func is not None:
+            self._free_func(self)
             self.freed = True
         else:
             raise ValueError("Pointer has no dereference function set.")
@@ -90,7 +90,7 @@ class Pointer:
         """Internal method to set the dereference function (intended for memory allocators)."""
         if not callable(func):
             raise TypeError("Function must be callable.")
-        self._deref = func
+        self._free_func = func
 
     def __enter__(self):
         return self

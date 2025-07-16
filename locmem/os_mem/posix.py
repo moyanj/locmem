@@ -9,9 +9,10 @@ if "linux" not in sys.platform and "darwin" not in sys.platform:
 class PosixMemory(BaseMemory):
     def __init__(self):
         super().__init__()
-        # 在Linux上是libc.so.6, 在macOS上是libSystem.B.dylib
+
         lib_name = "libc.so.6" if "linux" in sys.platform else "libSystem.B.dylib"
         self.libc = ctypes.CDLL(lib_name)
+
         self.libc.mmap.restype = ctypes.c_void_p
         self.libc.mmap.argtypes = (
             ctypes.c_void_p,
@@ -25,7 +26,7 @@ class PosixMemory(BaseMemory):
         self.libc.munmap.argtypes = (ctypes.c_void_p, ctypes.c_size_t)
 
     def get(self, size: int, executable: bool = False) -> int:
-        # 内存保护标志
+        # Memory protection flags
         PROT_READ = 0x01
         PROT_WRITE = 0x02
         PROT_EXEC = 0x04
@@ -33,10 +34,10 @@ class PosixMemory(BaseMemory):
         if executable:
             prot |= PROT_EXEC
 
-        # 映射标志
+        # Map flags
         MAP_PRIVATE = 0x0002
-        MAP_ANONYMOUS = 0x1000  # 在macOS上是0x1000，在Linux上通常是0x20
-        # 为了跨平台兼容，需要检查
+        MAP_ANONYMOUS = 0x1000
+
         if "linux" in sys.platform:
             MAP_ANONYMOUS = 0x20
 
