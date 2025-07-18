@@ -1,7 +1,11 @@
 import ctypes
 from typing import Any, Callable, Optional, Tuple, Type
 
-_func = {}
+
+class MemoryError(Exception):
+    """Base class for all memory errors."""
+
+    pass
 
 
 class Pointer:
@@ -84,7 +88,7 @@ class Pointer:
             self._free_func(self)
             self.freed = True
         else:
-            raise ValueError("Pointer has no dereference function set.")
+            raise MemoryError("Pointer is not allocated.")
 
     def _set_hook(self, func: Callable):
         """Internal method to set the dereference function (intended for memory allocators)."""
@@ -129,9 +133,9 @@ def memcpy(dest: Pointer, src: Pointer, size: int):
     if not isinstance(size, int) or size < 0:
         raise ValueError("size must be a non-negative integer.")
     if dest.freed:
-        raise ValueError(f"Cannot copy to freed memory (destination: {dest}).")
+        raise MemoryError(f"Cannot copy to freed memory (destination: {dest}).")
     if src.freed:
-        raise ValueError(f"Cannot copy from freed memory (source: {src}).")
+        raise MemoryError(f"Cannot copy from freed memory (source: {src}).")
 
     # ctypes.memmove 能够处理源和目标重叠的情况，因此直接用它即可
     ctypes.memmove(dest.value, src.value, size)
