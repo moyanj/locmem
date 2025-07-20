@@ -20,7 +20,7 @@ class LibcAllocator(BaseAllocator):
 
     def alloc(self, size: int, executable: bool = False) -> Pointer:
         if executable:
-            raise MemoryError("MiMalloc does not support executable memory")
+            raise MemoryError("LibcMalloc does not support executable memory")
         addr = self._alloc(size)
         if addr == 0:
             raise MemoryError("Failed to allocate memory")

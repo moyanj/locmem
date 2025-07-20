@@ -5,6 +5,7 @@ from .binned import BinnedAllocator
 from .heap import HeapAllocator
 from .mimalloc import MiMallocAllocator
 from .libc_malloc import LibcAllocator
+from .tcmalloc import TcMallocAllocator
 
 global_allocator = BinnedAllocator()
 
@@ -34,5 +35,6 @@ __all__ = [
     "BinnedAllocator",
     "MiMallocAllocator",
     "LibcAllocator",
+    "TcMallocAllocator",
     "set_global_allocator",
 ]
