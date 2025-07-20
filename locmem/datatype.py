@@ -229,11 +229,11 @@ class StructBaseType(BaseType[DataType], ArithmeticMixin):
     def __init__(self, initial_value: DataType):
         if not hasattr(self.__class__, "size") or self.__class__.size <= 0:
             raise ValueError(
-                f"Concrete subclass of StructBaseType must define a positive 'size' class attribute."
+                "Concrete subclass of StructBaseType must define a positive 'size' class attribute."
             )
         if not hasattr(self.__class__, "_fmt") or not self.__class__._fmt:
             raise ValueError(
-                f"Concrete subclass of StructBaseType must define a non-empty '_fmt' class attribute."
+                "Concrete subclass of StructBaseType must define a non-empty '_fmt' class attribute."
             )
         super().__init__(self.__class__.size)
         self._fmt = self.__class__._fmt

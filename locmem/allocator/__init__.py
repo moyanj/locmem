@@ -3,6 +3,8 @@ from locmem.core import Pointer
 from .base import BaseAllocator
 from .binned import BinnedAllocator
 from .heap import HeapAllocator
+from .mimalloc import MiMallocAllocator
+from .libc_malloc import LibcAllocator
 
 global_allocator = BinnedAllocator()
 
@@ -30,5 +32,7 @@ __all__ = [
     "free",
     "HeapAllocator",
     "BinnedAllocator",
+    "MiMallocAllocator",
+    "LibcAllocator",
     "set_global_allocator",
 ]

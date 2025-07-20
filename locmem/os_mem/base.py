@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 
-from locmem.core import Pointer
-
 
 class BaseMemory(ABC):
     def __init__(self):

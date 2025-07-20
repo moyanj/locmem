@@ -87,8 +87,6 @@ class Pointer:
         if self._free_func is not None:
             self._free_func(self)
             self.freed = True
-        else:
-            raise MemoryError("Pointer is not allocated.")
 
     def _set_hook(self, func: Callable):
         """Internal method to set the dereference function (intended for memory allocators)."""
