@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import Dict
 
 from locmem.core import Pointer
+from threading import Lock
 
 
 class BaseAllocator(ABC):
@@ -11,8 +11,7 @@ class BaseAllocator(ABC):
     """
 
     def __init__(self):
-        self._allocated_blocks: Dict[Pointer, int] = {}
-
+        self._lock = Lock()
     @abstractmethod
     def alloc(self, size: int, executable: bool = False) -> Pointer:
         """分配一块指定大小的内存，返回一个指针。"""

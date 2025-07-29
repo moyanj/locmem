@@ -12,6 +12,7 @@ class HeapAllocator(BaseAllocator):
     def __init__(self):
         super().__init__()
         # 存储对底层OS内存操作函数的引用，以便调用
+        self._allocated_blocks = {}
         self._get_raw_memory = get_memory
         self._release_raw_memory = release_memory
 

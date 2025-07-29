@@ -83,6 +83,7 @@ class BinnedAllocator(BaseAllocator):
 
     def __init__(self):
         super().__init__()
+        self._allocated_blocks = {}
         self.bins: Dict[Tuple[int, bool], Set[Pointer]] = {}
         for size in BIN_SIZES:
             self.bins[(size, False)] = set()  # 不可执行内存的 bin
@@ -132,34 +133,34 @@ class BinnedAllocator(BaseAllocator):
         """
         if size <= 0:
             raise ValueError("Allocation size must be positive.")
+        with self._lock:
+            bin_size = self._find_bin(size)
 
-        bin_size = self._find_bin(size)
+            if bin_size is not None:
+                # --- 处理小内存请求 (来自 bin) ---
+                bin_key = (bin_size, executable)
 
-        if bin_size is not None:
-            # --- 处理小内存请求 (来自 bin) ---
-            bin_key = (bin_size, executable)
+                if not self.bins[bin_key]:
+                    # 如果箱子是空的，则扩充它
+                    self._grow_bin(bin_size, executable)
 
-            if not self.bins[bin_key]:
-                # 如果箱子是空的，则扩充它
-                self._grow_bin(bin_size, executable)
+                if not self.bins[bin_key]:
+                    raise RuntimeError(f"Failed to grow bin {bin_key} or bin is empty.")
+                ptr = self.bins[bin_key].pop()
+                ptr.freed = False
 
-            if not self.bins[bin_key]:
-                raise RuntimeError(f"Failed to grow bin {bin_key} or bin is empty.")
-            ptr = self.bins[bin_key].pop()
-            ptr.freed = False
+                # 标记所属 BinPage 中的 chunk 为已分配
+                parent_page = self.chunk_to_page_map[ptr]
+                parent_page.mark_allocated()
 
-            # 标记所属 BinPage 中的 chunk 为已分配
-            parent_page = self.chunk_to_page_map[ptr]
-            parent_page.mark_allocated()
-
-            return ptr
-        else:
-            # --- 处理大内存请求 (直接向OS申请) ---
-            address = get_memory(size, executable)
-            ptr = Pointer(address)
-            ptr._set_hook(self.free)
-            self._allocated_blocks[ptr] = size
-            return ptr
+                return ptr
+            else:
+                # --- 处理大内存请求 (直接向OS申请) ---
+                address = get_memory(size, executable)
+                ptr = Pointer(address)
+                ptr._set_hook(self.free)
+                self._allocated_blocks[ptr] = size
+                return ptr
 
     def free(self, ptr: Pointer):
         """
@@ -168,75 +169,79 @@ class BinnedAllocator(BaseAllocator):
         """
         if not isinstance(ptr, Pointer):
             raise TypeError("Argument to free must be a Pointer object.")
-        if ptr.freed:
-            # 允许重复释放，不抛出异常
-            return
+        with self._lock:
+            if ptr.freed:
+                # 允许重复释放，不抛出异常
+                return
 
-        # 检查是否是来自 bin 的小内存块
-        if ptr in self.chunk_to_page_map:
-            parent_page = self.chunk_to_page_map[ptr]
-            bin_size = parent_page.bin_size
-            executable = parent_page.executable
+            # 检查是否是来自 bin 的小内存块
+            if ptr in self.chunk_to_page_map:
+                parent_page = self.chunk_to_page_map[ptr]
+                bin_size = parent_page.bin_size
+                executable = parent_page.executable
 
-            bin_key = (bin_size, executable)
+                bin_key = (bin_size, executable)
 
-            # 将指针归还到对应的空闲集合
-            self.bins[bin_key].add(ptr)
-            ptr.freed = True
+                # 将指针归还到对应的空闲集合
+                self.bins[bin_key].add(ptr)
+                ptr.freed = True
 
-            parent_page.mark_freed()
+                parent_page.mark_freed()
 
-            # 检查该页是否已完全空闲，如果是则归还给OS
-            if parent_page.is_fully_free():
-                # 从对应的活跃页列表中移除该页
-                self.active_pages[bin_key].remove(parent_page)
-                release_memory(parent_page.base_address, parent_page.page_size)
+                # 检查该页是否已完全空闲，如果是则归还给OS
+                if parent_page.is_fully_free():
+                    # 从对应的活跃页列表中移除该页
+                    self.active_pages[bin_key].remove(parent_page)
+                    release_memory(parent_page.base_address, parent_page.page_size)
 
-                # 这些指针现在指向无效内存，必须清除
-                for i in range(parent_page.total_chunks):
-                    chunk_addr = parent_page.base_address + i * bin_size
-                    chunk_ptr = Pointer(chunk_addr)
-                    # 从 chunk_to_page_map 中移除映射
-                    if chunk_ptr in self.chunk_to_page_map:
-                        del self.chunk_to_page_map[chunk_ptr]
-                    # 从 bins 中移除，因为现在它们是无效指针
-                    if chunk_ptr in self.bins[bin_key]:
-                        self.bins[bin_key].remove(chunk_ptr)
-        # 检查是否是直接分配的大内存块
-        elif ptr in self._allocated_blocks:
-            mem_size = self._allocated_blocks.pop(ptr)
-            release_memory(ptr.value, mem_size)
-            ptr.freed = True
-        else:
-            raise ValueError(
-                f"Invalid pointer: {ptr} was not managed by this allocator."
-            )
+                    # 这些指针现在指向无效内存，必须清除
+                    for i in range(parent_page.total_chunks):
+                        chunk_addr = parent_page.base_address + i * bin_size
+                        chunk_ptr = Pointer(chunk_addr)
+                        # 从 chunk_to_page_map 中移除映射
+                        if chunk_ptr in self.chunk_to_page_map:
+                            del self.chunk_to_page_map[chunk_ptr]
+                        # 从 bins 中移除，因为现在它们是无效指针
+                        if chunk_ptr in self.bins[bin_key]:
+                            self.bins[bin_key].remove(chunk_ptr)
+            # 检查是否是直接分配的大内存块
+            elif ptr in self._allocated_blocks:
+                mem_size = self._allocated_blocks.pop(ptr)
+                release_memory(ptr.value, mem_size)
+                ptr.freed = True
+            else:
+                raise ValueError(
+                    f"Invalid pointer: {ptr} was not managed by this allocator."
+                )
 
     def gc(self):
         """
         确保在分配器对象销毁时，所有未释放的内存块（包括所有活跃的BinPage）都被归还给OS。
         """
-        # 释放所有大块内存
-        for ptr, size in list(self._allocated_blocks.items()):
-            try:
-                release_memory(ptr.value, size)
-                ptr.freed = True
-            except Exception as e:
-                print(f"  Error releasing large block {hex(ptr.value)}: {e}")
-        self._allocated_blocks.clear()
-
-        # 释放所有 BinPage 管理的内存
-        for bin_key, pages_list in list(self.active_pages.items()):
-            for page in list(pages_list):  # 迭代副本
+        with self._lock:
+            # 释放所有大块内存
+            for ptr, size in list(self._allocated_blocks.items()):
                 try:
-                    release_memory(page.base_address, page.page_size)
+                    release_memory(ptr.value, size)
+                    ptr.freed = True
                 except Exception as e:
-                    print(f"  Error releasing BinPage {hex(page.base_address)}: {e}")
-            self.active_pages[bin_key].clear()  # 清空列表
+                    print(f"  Error releasing large block {hex(ptr.value)}: {e}")
+            self._allocated_blocks.clear()
 
-        # 清空所有 bins 和 chunk_to_page_map
-        self.bins.clear()
-        self.chunk_to_page_map.clear()
+            # 释放所有 BinPage 管理的内存
+            for bin_key, pages_list in list(self.active_pages.items()):
+                for page in list(pages_list):  # 迭代副本
+                    try:
+                        release_memory(page.base_address, page.page_size)
+                    except Exception as e:
+                        print(
+                            f"  Error releasing BinPage {hex(page.base_address)}: {e}"
+                        )
+                self.active_pages[bin_key].clear()  # 清空列表
+
+            # 清空所有 bins 和 chunk_to_page_map
+            self.bins.clear()
+            self.chunk_to_page_map.clear()
 
     def __del__(self):
         self.gc()
