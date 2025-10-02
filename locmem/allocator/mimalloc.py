@@ -1,3 +1,4 @@
+from ctypes.util import find_library
 from typing import Optional
 from locmem.allocator.base import BaseAllocator
 import ctypes
@@ -14,9 +15,15 @@ class MiMallocAllocator(BaseAllocator):
         if path is not None:
             self._mimalloc = ctypes.CDLL(path)
         else:
-            self._mimalloc = ctypes.CDLL(
-                "mimalloc.dll" if sys.platform == "win32" else "libmimalloc.so"
-            )
+            if sys.platform == "win32":
+                p = "mimalloc.dll"
+            elif sys.platform == "linux":
+                p = "libmimalloc.so"
+            elif sys.platform == "darwin":
+                p = "libmimalloc.dylib"
+            else:
+                p = find_library("mimalloc")
+            self._mimalloc = ctypes.CDLL(p)
         self._mi_alloc = self._mimalloc.mi_malloc
         self._mi_alloc.restype = ctypes.c_void_p
         self._mi_alloc.argtypes = [ctypes.c_size_t]

@@ -6,6 +6,14 @@ from .base import BaseMemory
 if sys.platform != "win32":
     raise ImportError("This module only supports Windows.")
 
+PAGE_EXECUTE_READWRITE = 0x40
+PAGE_READWRITE = 0x04
+
+MEM_COMMIT = 0x1000
+MEM_RESERVE = 0x2000
+
+MEM_RELEASE = 0x8000
+
 
 class Win32Memory(BaseMemory):
     def __init__(self):
@@ -26,12 +34,9 @@ class Win32Memory(BaseMemory):
         ]
 
     def get(self, size: int, executable: bool = False) -> int:
-        PAGE_EXECUTE_READWRITE = 0x40
-        PAGE_READWRITE = 0x04
+
         protect = PAGE_EXECUTE_READWRITE if executable else PAGE_READWRITE
 
-        MEM_COMMIT = 0x1000
-        MEM_RESERVE = 0x2000
         allocation_type = MEM_COMMIT | MEM_RESERVE
 
         address = self.kernel32.VirtualAlloc(0, size, allocation_type, protect)
@@ -40,6 +45,5 @@ class Win32Memory(BaseMemory):
         return address
 
     def release(self, address: int, size: int):
-        MEM_RELEASE = 0x8000
         if self.kernel32.VirtualFree(address, 0, MEM_RELEASE) == 0:
             raise MemoryError(f"VirtualFree failed to free memory at {hex(address)}")

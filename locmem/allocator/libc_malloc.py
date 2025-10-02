@@ -1,3 +1,4 @@
+from ctypes.util import find_library
 from typing import Optional
 from locmem.allocator.base import BaseAllocator
 import ctypes
@@ -10,7 +11,7 @@ class LibcAllocator(BaseAllocator):
     """
 
     def __init__(self, path: Optional[str] = None):
-        self.libc = ctypes.CDLL(path)
+        self.libc = ctypes.CDLL(path or find_library("c"))
         self._alloc = self.libc.malloc
         self._alloc.restype = ctypes.c_void_p
         self._alloc.argtypes = [ctypes.c_size_t]

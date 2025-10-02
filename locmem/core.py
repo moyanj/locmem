@@ -176,3 +176,49 @@ def memexec(
     func_ptr = func_type(address.value)
 
     return func_ptr
+
+
+memmove = memcpy
+
+
+def memcmp(ptr1: Pointer, ptr2: Pointer, size: int) -> int:
+    """
+    比较两个内存区域是否相等。
+    返回：
+        相等返回 0；
+        ptr1 > ptr2 返回正数；
+        ptr1 < ptr2 返回负数。
+    """
+    if not isinstance(ptr1, Pointer):
+        raise TypeError("ptr1 must be a Pointer object.")
+    if not isinstance(ptr2, Pointer):
+        raise TypeError("ptr2 must be a Pointer object.")
+    if not isinstance(size, int) or size < 0:
+        raise ValueError("size must be a non-negative integer.")
+    if ptr1.freed:
+        raise MemoryError(f"Cannot compare freed memory (ptr1: {ptr1}).")
+    if ptr2.freed:
+        raise MemoryError(f"Cannot compare freed memory (ptr2: {ptr2}).")
+    for i in range(size):
+        b1 = ctypes.c_byte.from_address(ptr1.value + i).value
+        b2 = ctypes.c_byte.from_address(ptr2.value + i).value
+        if b1 != b2:
+            return b1 - b2
+    return 0
+
+
+def memchr(ptr: Pointer, value: int, size: int) -> Optional[Pointer]:
+    """查找内存中第一个等于 value 的字节，返回其地址。"""
+    if not isinstance(ptr, Pointer):
+        raise TypeError("ptr must be a Pointer object.")
+    if not isinstance(value, int) or value < 0 or value > 255:
+        raise ValueError("value must be an integer between 0 and 255.")
+    if not isinstance(size, int) or size < 0:
+        raise ValueError("size must be a non-negative integer.")
+    if ptr.freed:
+        raise MemoryError(f"Cannot access freed memory (ptr: {ptr}).")
+    for i in range(size):
+        b = ctypes.c_byte.from_address(ptr.value + i).value
+        if b == value:
+            return Pointer(ptr.value + i)
+    return None

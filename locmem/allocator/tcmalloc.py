@@ -14,9 +14,15 @@ class TcMallocAllocator(BaseAllocator):
         if path is not None:
             self._tcmalloc = ctypes.CDLL(path)
         else:
-            self._tcmalloc = ctypes.CDLL(
-                "tcmalloc.dll" if sys.platform == "win32" else "libtcmalloc.so"
-            )
+            if sys.platform == "win32":
+                p = "tcmalloc.dll"
+            elif sys.platform == "linux":
+                p = "libtcmalloc.so"
+            elif sys.platform == "darwin":
+                p = "libtcmalloc.dylib"
+            else:
+                p = find_library("mimalloc")
+            self._tcmalloc = ctypes.CDLL(p)
         self._tc_alloc = self._tcmalloc.tc_malloc
         self._tc_alloc.restype = ctypes.c_void_p
         self._tc_alloc.argtypes = [ctypes.c_size_t]

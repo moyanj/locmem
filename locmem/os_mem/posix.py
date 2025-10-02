@@ -1,4 +1,5 @@
 import ctypes
+from ctypes.util import find_library
 import sys
 
 from .base import BaseMemory
@@ -6,12 +7,20 @@ from .base import BaseMemory
 if "linux" not in sys.platform and "darwin" not in sys.platform:
     raise ImportError("This module only supports POSIX-compliant.")
 
+PROT_READ = 0x01
+PROT_WRITE = 0x02
+PROT_EXEC = 0x04
+
+# Map flags
+MAP_PRIVATE = 0x0002
+MAP_ANONYMOUS = 0x20 if "linux" in sys.platform else 0x1000
+
 
 class PosixMemory(BaseMemory):
     def __init__(self):
         super().__init__()
 
-        lib_name = "libc.so.6" if "linux" in sys.platform else "libSystem.B.dylib"
+        lib_name = find_library("c") if "linux" in sys.platform else "libSystem.B.dylib"
         self.libc = ctypes.CDLL(lib_name)
 
         self.libc.mmap.restype = ctypes.c_void_p
@@ -28,19 +37,9 @@ class PosixMemory(BaseMemory):
 
     def get(self, size: int, executable: bool = False) -> int:
         # Memory protection flags
-        PROT_READ = 0x01
-        PROT_WRITE = 0x02
-        PROT_EXEC = 0x04
         prot = PROT_READ | PROT_WRITE
         if executable:
             prot |= PROT_EXEC
-
-        # Map flags
-        MAP_PRIVATE = 0x0002
-        MAP_ANONYMOUS = 0x1000
-
-        if "linux" in sys.platform:
-            MAP_ANONYMOUS = 0x20
 
         flags = MAP_PRIVATE | MAP_ANONYMOUS
 
